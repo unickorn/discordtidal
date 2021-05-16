@@ -1,7 +1,7 @@
-package main
+package discordtidal
 
 import (
-	"fmt"
+	"discordtidal/song"
 	"strings"
 	"syscall"
 	"unicode/utf16"
@@ -15,18 +15,10 @@ var (
 	procGetWindowThreadProcessId = user32.MustFindProc("GetWindowThreadProcessId")
 )
 
-func main() {
-	song, artist := GetSong()
-	fmt.Printf("You are listening to: %v by %v", song, artist)
-}
-
-// GetSong tries to get the song and artist from Tidal's window title.
-func GetSong() (string, string) {
+// GetSong tries to get the song and artist from Tidal window title.
+func GetSong() (track, artist string, status Status) {
 	processIDs := GetTidalProcessIDs()
 
-	// Get window name that has the same process id
-	var song string
-	var artist string
 	cb := syscall.NewCallback(func(h syscall.Handle, p uintptr) uintptr {
 		processId := GetWindowThreadProcessId(uintptr(h))
 		// skip if process id is not one of the TIDAL.exe ones
@@ -36,22 +28,28 @@ func GetSong() (string, string) {
 		}
 
 		title := GetWindowText(h)
-		if !strings.Contains(title, " - ") || strings.Contains(title, "}") {
+		if !strings.Contains(title, " - ") || strings.Contains(title, "{") {
+			if song.Current != nil {
+				status = Paused
+			} else {
+				status = Opened
+			}
 			return 1
 		}
 
 		s := strings.Split(title, " - ")
-		song = s[0]
-		artist = s[1]
+		track = strings.Join(s[:len(s)-1], " - ")
+		artist = s[len(s)-1] // just assume it's always the song that has dashes lmao
+		status = Playing
 		return 0
 	})
-	EnumWindows(cb, 0)
 
-	return song, artist
+	EnumWindows(cb, 0)
+	return
 }
 
 // GetTidalProcessIDs returns a map[TIDAL.exe pid]0 because we will abuse this
-// map to check if a process ID is one of TIDAL's later on.
+// map to check if a process ID is one of TIDAL ones later on.
 func GetTidalProcessIDs() map[uint32]byte {
 	// Get a snapshot of all processes
 	snapshot, err := syscall.CreateToolhelp32Snapshot(0x00000002, 0) // the flag is TH32CS_SNAPPROCESS
@@ -97,9 +95,7 @@ func GetWindowText(hwnd syscall.Handle) string {
 }
 
 // GetWindowThreadProcessId wraps around user32.GetWindowThreadProcessId. Below is the API doc from Microsoft.
-// Copies the text of the specified window's title bar (if it has one) into a buffer. If the specified window is a
-// control, the text of the control is copied. However, GetWindowText cannot retrieve the text of a control
-// in another application.
+// Copies the text of the specified window's title bar (if it has one) into a buffer.
 func GetWindowThreadProcessId(hwnd uintptr) uintptr {
 	var processId uintptr = 0
 	_, _, _ = procGetWindowThreadProcessId.Call(hwnd, uintptr(unsafe.Pointer(&processId)))

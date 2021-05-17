@@ -44,7 +44,7 @@ func Start() {
 			if status == Playing {
 				// NEW SONG
 
-				songChanged := song.Current.Track.Title != track || !song.Current.Track.ArtistMatches(artist)
+				songChanged := song.Current != nil && (song.Current.Track.Title != track || !song.Current.Track.ArtistMatches(artist))
 				looped := song.Current != nil && time.Now().Unix() > int64(song.Current.Track.Duration)+song.Current.StartTime+int64(song.Current.PausedTime)+1
 				if song.Current == nil || songChanged || looped {
 					// Load song

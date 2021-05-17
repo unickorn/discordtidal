@@ -73,7 +73,6 @@ func GetTrack(songName string, artistName string) *Track {
 	//var maxQuality AudioQualityLevel
 	//found := false
 	for _, track := range res.Items {
-		log.Log().Infof("found: %s by %s", track.Title, track.FormatArtists())
 		if track.Title == songName && track.FormatArtists() == artistName {
 			tTrack = &track
 			break

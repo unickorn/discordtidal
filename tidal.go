@@ -43,9 +43,10 @@ func Start() {
 
 			if status == Playing {
 				// NEW SONG
-				if song.Current == nil || song.Current.Track.Title != track || !song.Current.Track.ArtistMatches(artist) {
-					coverUpdateTime = 0
-					needsCoverUpdate = false
+
+				songChanged := song.Current.Track.Title != track || !song.Current.Track.ArtistMatches(artist)
+				looped := song.Current != nil && time.Now().Unix() > int64(song.Current.Track.Duration)+song.Current.StartTime+int64(song.Current.PausedTime)+1
+				if song.Current == nil || songChanged || looped {
 					// Load song
 					now := time.Now()
 					song.Current = &song.Song{
@@ -56,13 +57,16 @@ func Start() {
 					}
 
 					albumId := song.Current.Track.Album.StringId()
-					if asset := discord.FetchAsset(song.Current.Track.Album); asset == nil {
-						coverUpdateTime = 20
-						albumId = "tidal"
+					if songChanged && !looped {
+						coverUpdateTime = 0
+						needsCoverUpdate = false
+						if asset := discord.FetchAsset(song.Current.Track.Album); asset == nil {
+							coverUpdateTime = 20
+							albumId = "tidal"
+						}
+						discord.UpdateName(song.Current.Track.Title)
+						rpc.Relog()
 					}
-
-					discord.UpdateName(song.Current.Track.Title)
-					rpc.Relog()
 
 					end := time.Unix(int64(uint64(song.Current.Track.Duration)+uint64(song.Current.StartTime)+song.Current.PausedTime)+1, 0)
 					err := client.SetActivity(client.Activity{

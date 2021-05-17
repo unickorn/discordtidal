@@ -13,13 +13,13 @@ var (
 	procGetWindowTextW           = user32.MustFindProc("GetWindowTextW")
 	procEnumWindows              = user32.MustFindProc("EnumWindows")
 	procGetWindowThreadProcessId = user32.MustFindProc("GetWindowThreadProcessId")
-)
 
-// GetSong tries to get the song and artist from Tidal window title.
-func GetSong() (track, artist string, status Status) {
-	processIDs := GetTidalProcessIDs()
+	track  string
+	artist string
+	st     Status
+	cb     = syscall.NewCallback(func(h syscall.Handle, p uintptr) uintptr {
+		processIDs := GetTidalProcessIDs()
 
-	cb := syscall.NewCallback(func(h syscall.Handle, p uintptr) uintptr {
 		processId := GetWindowThreadProcessId(uintptr(h))
 		// skip if process id is not one of the TIDAL.exe ones
 		_, ok := processIDs[uint32(processId)]
@@ -30,9 +30,9 @@ func GetSong() (track, artist string, status Status) {
 		title := GetWindowText(h)
 		if !strings.Contains(title, " - ") || strings.Contains(title, "{") {
 			if song.Current != nil {
-				status = Paused
+				st = Paused
 			} else {
-				status = Opened
+				st = Opened
 			}
 			return 1
 		}
@@ -40,12 +40,15 @@ func GetSong() (track, artist string, status Status) {
 		s := strings.Split(title, " - ")
 		track = strings.Join(s[:len(s)-1], " - ")
 		artist = s[len(s)-1] // just assume it's always the song that has dashes lmao
-		status = Playing
+		st = Playing
 		return 0
 	})
+)
 
+// GetSong tries to get the song and artist from Tidal window title.
+func GetSong() (string, string, Status) {
 	EnumWindows(cb, 0)
-	return
+	return track, artist, st
 }
 
 // GetTidalProcessIDs returns a map[TIDAL.exe pid]0 because we will abuse this

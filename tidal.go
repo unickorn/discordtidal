@@ -38,26 +38,33 @@ func Start() {
 	for {
 		track, artist, status := GetSong()
 		if status != Closed {
-			sleepTime = time.Second * 1
+			sleepTime = time.Second
 			rpc.Login()
 
 			if status == Playing {
 				// NEW SONG
-
+				nothingPlaying := song.Current == nil
 				songChanged := song.Current != nil && (song.Current.Track.Title != track || !song.Current.Track.ArtistMatches(artist))
 				looped := song.Current != nil && time.Now().Unix() > int64(song.Current.Track.Duration)+song.Current.StartTime+int64(song.Current.PausedTime)+1
-				if song.Current == nil || songChanged || looped {
+				if nothingPlaying || songChanged || looped {
 					// Load song
 					now := time.Now()
+
+					var t tidal.Track
+					if looped {
+						t = song.Current.Track
+					} else {
+						t = *tidal.GetTrack(track, artist)
+					}
 					song.Current = &song.Song{
 						StartTime:  now.Unix(),
 						PausedTime: 0,
 						Paused:     false,
-						Track:      *tidal.GetTrack(track, artist),
+						Track:      t,
 					}
 
 					albumId := song.Current.Track.Album.StringId()
-					if songChanged && !looped {
+					if nothingPlaying || (songChanged && !looped) {
 						coverUpdateTime = 0
 						needsCoverUpdate = false
 						if asset := discord.FetchAsset(song.Current.Track.Album); asset == nil {
@@ -128,31 +135,37 @@ func Start() {
 			}
 
 			// Just opened Tidal
-			if status == Opened {
-				err := client.SetActivity(client.Activity{
-					Details:    "TIDAL",
-					State:      "Opened",
-					LargeImage: "tidal",
-					LargeText:  "TIDAL",
-				})
-				if err != nil {
-					panic(err)
-				}
-			}
+			//if status == Opened {
+			// to be honest, we shouldn't really do anything on this one
+			// it's a mess to update the discord again to the TIDAL name and relog, spotify integration
+			// also doesn't show "opened spotify" either
+
+			//err := client.SetActivity(client.Activity{
+			//	Details:    "TIDAL",
+			//	State:      "Opened",
+			//	LargeImage: "tidal",
+			//	LargeText:  "TIDAL",
+			//})
+			//if err != nil {
+			//	panic(err)
+			//}
+			//}
 
 			// Paused a song
 			if status == Paused && song.Current != nil {
 				song.Current.PausedTime++
-				song.Current.Paused = true
 
-				err := client.SetActivity(client.Activity{
-					Details:    "by " + song.Current.Track.FormatArtists(),
-					State:      "on " + song.Current.Track.Album.Title,
-					LargeImage: song.Current.Track.Album.StringId(),
-					LargeText:  song.Current.Track.Album.Title,
-				})
-				if err != nil {
-					panic(err)
+				if !song.Current.Paused {
+					song.Current.Paused = true
+					err := client.SetActivity(client.Activity{
+						Details:    "by " + song.Current.Track.FormatArtists(),
+						State:      "on " + song.Current.Track.Album.Title,
+						LargeImage: song.Current.Track.Album.StringId(),
+						LargeText:  song.Current.Track.Album.Title,
+					})
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
 		} else {

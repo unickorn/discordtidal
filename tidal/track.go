@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -54,10 +55,10 @@ type SearchResult struct {
 // GetTrack returns a Track from Tidal with given song and artist names.
 func GetTrack(songName string, artistName string) *Track {
 	log.Log().Infof("searching %s by %s", songName, artistName)
-	url := fmt.Sprintf("https://api.tidal.com/v1/search/tracks?countryCode=US&query=%s&limit=15", strings.Replace(songName, " ", "%20", -1)+"%20"+strings.Replace(artistName, " ", "%20", -1))
+	link := fmt.Sprintf("https://api.tidal.com/v1/search/tracks?countryCode=US&query=%s&limit=15", url.QueryEscape(songName+" "+artistName))
 
 	cl := http.DefaultClient
-	req, _ := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequest("GET", link, nil)
 	req.Header.Set("x-tidal-token", "CzET4vdadNUFQ5JU")
 	resp, err := cl.Do(req)
 	if err != nil {

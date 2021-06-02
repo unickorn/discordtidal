@@ -12,6 +12,12 @@ TIDAL desktop (not the browser version) and looks like this:
 
 ![image](https://i.imgur.com/W53wzpq.png)
 
+With a recent Discord update, the background is black no matter the listening/playing status, hence it is even less noticable.
+
+![spotify](https://user-images.githubusercontent.com/29836508/120451801-67df4f00-c39a-11eb-85e7-5173cb47334e.png)
+![tidal](https://user-images.githubusercontent.com/29836508/120451811-69a91280-c39a-11eb-8982-5079a4c61412.png)
+
+
 ## How do I use it?
 
 Since this uses a Discord application that's modified to match the song you're listening to, you need to create your own

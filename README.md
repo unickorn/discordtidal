@@ -1,5 +1,7 @@
 # discordtidal
 
+## USE AT YOUR OWN RISK! This got my main Discord account banned, as I was carelessly using it thinking Discord would warn me before disabling my account and not responding to the appeal.
+
 Remember when Discord added a Spotify integration and all of your friends started having fun with it, but then being the
 weirdo you are, you had TIDAL instead of Spotify Premium?
 

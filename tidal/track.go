@@ -9,6 +9,19 @@ import (
 	"strings"
 )
 
+type Album struct {
+	Id         int
+	Title      string
+	Cover      string
+	VideoCover *string
+}
+
+type Artist struct {
+	Id         int
+	Name       string
+	ArtistType string
+}
+
 type Track struct {
 	Id           int
 	Title        string

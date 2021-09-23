@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"discordtidal/discord"
 	"discordtidal/log"
 	"github.com/hugolgst/rich-go/client"
 	"os"
@@ -10,7 +9,8 @@ import (
 )
 
 var (
-	loggedIn = false
+	applicationId = "840927525588172810"
+	loggedIn      = false
 )
 
 func Init() {
@@ -27,7 +27,7 @@ func Init() {
 
 func Login() {
 	if !loggedIn {
-		err := client.Login(discord.GetConfig().ApplicationId)
+		err := client.Login(applicationId)
 		if err != nil {
 			log.Log().Fatal(err)
 		}
@@ -43,15 +43,5 @@ func Logout() {
 		loggedIn = false
 
 		log.Log().Info("logged out of discord")
-	}
-}
-
-func Relog() {
-	log.Log().Info("reloading presence")
-
-	client.Logout()
-	err := client.Login(discord.GetConfig().ApplicationId)
-	if err != nil {
-		panic(err)
 	}
 }

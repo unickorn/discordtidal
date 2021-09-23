@@ -1,7 +1,6 @@
 package discordtidal
 
 import (
-	"discordtidal/discord"
 	"discordtidal/log"
 	"discordtidal/rpc"
 	"discordtidal/song"
@@ -20,20 +19,15 @@ const (
 )
 
 var (
-	sleepTime        = time.Second * 5
-	needsCoverUpdate = false
-	coverUpdateTime  = 0
+	sleepTime = time.Second * 5
 )
 
 // Start starts the Discord RPC update loop.
 func Start() {
 	log.Init()
 	defer log.Log().Sync()
-	discord.LoadConfig()
 	rpc.Init()
 	defer rpc.Logout()
-	discord.OpenDb()
-	discord.Sync()
 
 	for {
 		track, artist, status := GetSong()
@@ -63,23 +57,14 @@ func Start() {
 						Track:      t,
 					}
 
-					albumId := song.Current.Track.Album.StringId()
 					if nothingPlaying || (songChanged && !looped) {
-						coverUpdateTime = 0
-						needsCoverUpdate = false
-						if asset := discord.FetchAsset(song.Current.Track.Album); asset == nil {
-							coverUpdateTime = 20
-							albumId = "tidal"
-						}
-						discord.UpdateName(song.Current.Track.Title)
-						rpc.Relog()
 					}
 
 					end := time.Unix(int64(uint64(song.Current.Track.Duration)+uint64(song.Current.StartTime)+song.Current.PausedTime)+1, 0)
 					err := client.SetActivity(client.Activity{
-						Details:    "by " + song.Current.Track.FormatArtists(),
-						State:      "on " + song.Current.Track.Album.Title,
-						LargeImage: albumId,
+						Details:    song.Current.Track.Title,
+						State:      "by " + song.Current.Track.FormatArtists(),
+						LargeImage: "tidal",
 						LargeText:  song.Current.Track.Album.Title,
 						Timestamps: &client.Timestamps{
 							Start: &now,
@@ -91,37 +76,15 @@ func Start() {
 					}
 				}
 
-				if coverUpdateTime > 0 {
-					coverUpdateTime--
-					if coverUpdateTime <= 0 {
-						needsCoverUpdate = true
-					}
-				}
-
-				if song.Current.Paused || needsCoverUpdate {
+				if song.Current.Paused {
 					song.Current.Paused = false
 
-					albumId := song.Current.Track.Album.StringId()
-					if needsCoverUpdate {
-						discord.Sync()
-						// it probably still won't exist because stupid discord cache hasn't updated yet
-						a := discord.FetchAsset(song.Current.Track.Album)
-						if a == nil {
-							coverUpdateTime = 20
-							albumId = "tidal"
-						}
-						needsCoverUpdate = false
-					} else {
-						if a := discord.FetchAsset(song.Current.Track.Album); a == nil {
-							albumId = "tidal"
-						}
-					}
 					start := time.Unix(song.Current.StartTime, 0)
 					end := time.Unix(int64(uint64(song.Current.Track.Duration)+uint64(song.Current.StartTime)+song.Current.PausedTime)+1, 0)
 					err := client.SetActivity(client.Activity{
-						Details:    "by " + song.Current.Track.FormatArtists(),
-						State:      "on " + song.Current.Track.Album.Title,
-						LargeImage: albumId,
+						Details:    song.Current.Track.Title,
+						State:      "by " + song.Current.Track.FormatArtists(),
+						LargeImage: "tidal",
 						LargeText:  song.Current.Track.Album.Title,
 						Timestamps: &client.Timestamps{
 							Start: &start,
@@ -134,23 +97,6 @@ func Start() {
 				}
 			}
 
-			// Just opened Tidal
-			//if status == Opened {
-			// to be honest, we shouldn't really do anything on this one
-			// it's a mess to update the discord again to the TIDAL name and relog, spotify integration
-			// also doesn't show "opened spotify" either
-
-			//err := client.SetActivity(client.Activity{
-			//	Details:    "TIDAL",
-			//	State:      "Opened",
-			//	LargeImage: "tidal",
-			//	LargeText:  "TIDAL",
-			//})
-			//if err != nil {
-			//	panic(err)
-			//}
-			//}
-
 			// Paused a song
 			if status == Paused && song.Current != nil {
 				song.Current.PausedTime++
@@ -158,9 +104,9 @@ func Start() {
 				if !song.Current.Paused {
 					song.Current.Paused = true
 					err := client.SetActivity(client.Activity{
-						Details:    "by " + song.Current.Track.FormatArtists(),
-						State:      "on " + song.Current.Track.Album.Title,
-						LargeImage: song.Current.Track.Album.StringId(),
+						Details:    song.Current.Track.Title,
+						State:      "by " + song.Current.Track.FormatArtists(),
+						LargeImage: "tidal",
 						LargeText:  song.Current.Track.Album.Title,
 					})
 					if err != nil {

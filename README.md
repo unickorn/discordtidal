@@ -8,36 +8,23 @@ Well, I do. And this is what I did to make the currently playing TIDAL song show
 ## Okay, so, what is this again?
 
 A tool that makes the TIDAL song you're listening to show up in your Discord status. Only works on Windows using the 
-TIDAL desktop (not the browser version) and looks like this:
+TIDAL desktop application (not the browser version).
 
-![image](https://i.imgur.com/W53wzpq.png)
+Compared to the unsafe branch, this version looks a bit more boring. A picture is below.
+
+![image](https://i.imgur.com/kLXIqSa.png)
 
 ## How do I use it?
 
-Since this uses a Discord application that's modified to match the song you're listening to, you need to create your own
-**Discord Application**.
+Unlike the unsafe branch, you can simply download the latest release from the releases tab and run the executable.
 
-- Go to https://discord.com/developers, create a new application and set the application ID in the config.toml file.
-
-
-- Get your Discord account token and set it in the config too.
-
-  You can get this using many methods, I used Firefox' network monitor (Ctrl+Shift+E) to check the https requests that
-  contain my token as authorization.
-
-
-- Get a User Agent of your choice and paste it in the config. I wanted to make this configurable for the fun of it. If
-  you don't know what a User Agent is, you can copy your user agent from [here](https://www.whatsmyua.info/).
+While the application window is open, your Discord playing status will be updated to match the song you're playing!
 
 ## How does it work?
 
-That's a little more complicated than you would probably expect, but I had my fun. Here's how it works step by step:
+Unlike the unsafe branch, this version is much simpler, though still cancerous. Here's how it works step by step:
 
 - get the song name from the TIDAL application window title
 - look up for the song in TIDAL api
-- get the metadata and album cover
-- upload the album cover to a Discord application as an application rich presence asset
-- update the application name to be the song name (so that it shows up at the top, in bold)
+- get the metadata (most importantly the album name)
 - connect to discord using [rich-go](https://github.com/hugolgst/rich-go)
-- store albums and assets in a leveldb so that the same album cover is not uploaded twice (thanks to discord cache)
-- clear up assets if they reach 250, since discord has a limit of 300

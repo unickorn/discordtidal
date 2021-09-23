@@ -4,6 +4,12 @@
 
 ### Update: Apparently this wasn't it and the ban was lifted, but still best to be careful!
 
+Check out the safer branch [here](https://github.com/Unickorn/discordtidal/tree/safer).
+It offers the following:
+- less risk of your account getting terminated
+- much simpler to use, just click on an exe and it works
+- looks way more boring
+
 ---
 
 Remember when Discord added a Spotify integration and all of your friends started having fun with it, but then being the
@@ -14,7 +20,7 @@ Well, I do. And this is what I did to make the currently playing TIDAL song show
 ## Okay, so, what is this again?
 
 A tool that makes the TIDAL song you're listening to show up in your Discord status. Only works on Windows using the 
-TIDAL desktop (not the browser version) and looks like this:
+TIDAL desktop application (not the browser version) and looks like this:
 
 ![image](https://i.imgur.com/W53wzpq.png)
 

@@ -14,6 +14,9 @@ var (
 	procEnumWindows              = user32.MustFindProc("EnumWindows")
 	procGetWindowThreadProcessId = user32.MustFindProc("GetWindowThreadProcessId")
 
+	processIDs = make(map[uint32]interface{})
+	timer      = 5
+
 	track  string
 	artist string
 	st     Status
@@ -53,7 +56,12 @@ func GetSong() (string, string, Status) {
 
 // GetTidalProcessIDs returns a map[TIDAL.exe pid]0 because we will abuse this
 // map to check if a process ID is one of TIDAL ones later on.
-func GetTidalProcessIDs() map[uint32]byte {
+func GetTidalProcessIDs() map[uint32]interface{} {
+	timer--
+	if len(processIDs) > 0 && timer > 0 {
+		return processIDs
+	}
+	timer = 5
 	// Get a snapshot of all processes
 	snapshot, err := syscall.CreateToolhelp32Snapshot(0x00000002, 0) // the flag is TH32CS_SNAPPROCESS
 	if err != nil {
@@ -73,10 +81,9 @@ func GetTidalProcessIDs() map[uint32]byte {
 	}
 
 	// Get processes with TIDAL.exe exefile
-	processIDs := make(map[uint32]byte)
 	for {
 		if parseProcessName(procEntry.ExeFile) == "TIDAL.exe" {
-			processIDs[procEntry.ProcessID] = 0
+			processIDs[procEntry.ProcessID] = struct{}{}
 		}
 		if err = syscall.Process32Next(snapshot, &procEntry); err != nil {
 			if err == syscall.ERROR_NO_MORE_FILES {

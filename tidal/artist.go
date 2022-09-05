@@ -1,7 +1,8 @@
 package tidal
 
+// Artist represents a Tidal artist.
 type Artist struct {
-	Id         int
+	ID         int
 	Name       string
 	ArtistType string
 }

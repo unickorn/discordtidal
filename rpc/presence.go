@@ -1,9 +1,9 @@
 package rpc
 
 import (
-	"discordtidal/discord"
-	"discordtidal/log"
 	"github.com/hugolgst/rich-go/client"
+	"github.com/unickorn/discordtidal/discord"
+	"github.com/unickorn/discordtidal/log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +13,7 @@ var (
 	loggedIn = false
 )
 
+// Init ...
 func Init() {
 	Login()
 
@@ -25,6 +26,7 @@ func Init() {
 	}()
 }
 
+// Login logs into the Discord socket.
 func Login() {
 	if !loggedIn {
 		err := client.Login(discord.GetConfig().ApplicationId)
@@ -33,21 +35,23 @@ func Login() {
 		}
 		loggedIn = true
 
-		log.Log().Info("logged into discord")
+		log.Log().Infoln("Logged into discord")
 	}
 }
 
+// Logout logs out from the Discord socket.
 func Logout() {
 	if loggedIn {
 		client.Logout()
 		loggedIn = false
 
-		log.Log().Info("logged out of discord")
+		log.Log().Infoln("Logged out of discord")
 	}
 }
 
+// Relog logs out and back in.
 func Relog() {
-	log.Log().Info("reloading presence")
+	log.Log().Infoln("Reloading presence")
 
 	client.Logout()
 	err := client.Login(discord.GetConfig().ApplicationId)

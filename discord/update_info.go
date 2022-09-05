@@ -1,8 +1,8 @@
 package discord
 
 import (
-	"discordtidal/log"
 	"fmt"
+	"github.com/unickorn/discordtidal/log"
 	"net/http"
 )
 
@@ -14,7 +14,6 @@ type UpdateInfo struct {
 	InteractionsEndpointUrl string `json:"interactions_endpoint_url"`
 	TermsOfServiceUrl       string `json:"terms_of_service_url"`
 	PrivacyPolicyUrl        string `json:"privacy_policy_url"`
-	EndpointInterface
 }
 
 // UpdateName updates the name of the Discord application.
@@ -31,7 +30,7 @@ func UpdateName(name string) {
 }
 
 func (c *UpdateInfo) url() string {
-	return fmt.Sprintf(editApplicationData, config.ApplicationId)
+	return fmt.Sprintf(endpointEditApplicationData, config.ApplicationId)
 }
 
 func (c *UpdateInfo) method() string {

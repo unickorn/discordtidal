@@ -1,8 +1,8 @@
 package discord
 
 import (
-	"discordtidal/log"
 	"fmt"
+	"github.com/unickorn/discordtidal/log"
 	"net/http"
 )
 
@@ -10,7 +10,6 @@ import (
 type DeleteAsset struct {
 	// id is the identifier of the Asset to be deleted.
 	id string
-	EndpointInterface
 }
 
 // DoDeleteAsset deletes a given Asset using an id.
@@ -24,7 +23,7 @@ func DoDeleteAsset(id string) {
 }
 
 func (d *DeleteAsset) url() string {
-	return fmt.Sprintf(deleteAsset, config.ApplicationId, d.id)
+	return fmt.Sprintf(endpointDeleteAsset, config.ApplicationId, d.id)
 }
 
 func (d *DeleteAsset) method() string {

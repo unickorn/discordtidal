@@ -1,9 +1,9 @@
 package discord
 
 import (
-	"discordtidal/log"
 	"encoding/json"
 	"fmt"
+	"github.com/unickorn/discordtidal/log"
 	"net/http"
 )
 
@@ -15,7 +15,6 @@ type UploadAsset struct {
 	Name string `json:"name"`
 	// Type seems to be 1 most of the time, I'm not sure what that is.
 	Type int `json:"type"`
-	EndpointInterface
 }
 
 // DoUploadAsset uploads a new Asset and returns the response.
@@ -36,12 +35,12 @@ func DoUploadAsset(name string, image string) Asset {
 	if err != nil {
 		panic(err)
 	}
-	log.Log().Infof("%s | upload asset (id: %s, name: %s)", r.Status, response.Id, response.Name)
+	log.Log().Infof("%s | upload asset (id: %s, name: %s)", r.Status, response.ID, response.Name)
 	return response
 }
 
 func (u *UploadAsset) url() string {
-	return fmt.Sprintf(assets, config.ApplicationId)
+	return fmt.Sprintf(endpointAssets, config.ApplicationId)
 }
 
 func (u *UploadAsset) method() string {

@@ -1,9 +1,9 @@
 package tidal
 
 import (
-	"discordtidal/log"
 	"encoding/json"
 	"fmt"
+	"github.com/unickorn/discordtidal/log"
 	"net/http"
 	"net/url"
 	"strings"

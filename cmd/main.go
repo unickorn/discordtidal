@@ -1,7 +1,7 @@
 package main
 
 import (
-	"discordtidal"
+	"github.com/unickorn/discordtidal"
 )
 
 func main() {

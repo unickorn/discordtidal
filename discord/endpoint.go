@@ -3,6 +3,7 @@ package discord
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -15,22 +16,18 @@ type EndpointInterface interface {
 
 // Do sends an EndpointInterface to Discord with the appropriate headers and returns the response.
 func Do(e EndpointInterface, hasBody bool) (*http.Response, error) {
-	var req *http.Request
-	var err error
-
+	var body io.Reader
 	if hasBody {
 		j, err := json.Marshal(e)
 		if err != nil {
 			panic(err)
 		}
-		req, err = http.NewRequest(e.method(), e.url(), bytes.NewReader(j))
-	} else {
-		req, err = http.NewRequest(e.method(), e.url(), nil)
+		body = bytes.NewReader(j)
 	}
+	req, err := http.NewRequest(e.method(), e.url(), body)
 	if err != nil {
 		panic(err)
 	}
-
 	req.Header.Set("Host", "discord.com")
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
@@ -39,7 +36,6 @@ func Do(e EndpointInterface, hasBody bool) (*http.Response, error) {
 	req.Header.Set("Connection", "keep-alive")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", config.UserAgent)
-
 	r, err := http.DefaultClient.Do(req)
 	return r, err
 }

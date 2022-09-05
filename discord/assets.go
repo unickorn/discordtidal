@@ -1,26 +1,27 @@
 package discord
 
 import (
-	"discordtidal/log"
-	"discordtidal/tidal"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/df-mc/goleveldb/leveldb"
+	"github.com/unickorn/discordtidal/log"
+	"github.com/unickorn/discordtidal/tidal"
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
-// Asset is an image object
+// Asset is an image object.
 type Asset struct {
 	// Name is the "Asset key" of the uploaded Asset. We use album ids here.
 	Name string `json:"name"`
 	// Type seems to be 1 most (all) of the time, I'm not sure what it is.
 	Type int `json:"type"`
-	// Id is the identifier of the uploaded Asset, an 18 characters long string.
-	Id string `json:"id"`
+	// ID is the identifier of the uploaded Asset, an 18 characters long string.
+	ID string `json:"id"`
 }
 
 // AssetData is a struct holding an Asset and its data.
@@ -54,18 +55,17 @@ func OpenDb() {
 	}
 	db = i
 
-	log.Log().Info("opened database")
+	log.Log().Infoln("Opened database")
 }
 
 // Sync loads the assets from Discord and synchronizes the data with the database.
 // The assets that are on Discord get marked or newly saved as "OK".
 // If there are more than 250 assets in total, oldest 10 assets are deleted.
 func Sync() {
-	log.Log().Info("syncing discord")
+	log.Log().Infoln("Syncing Discord cache")
 
-	t := 0
-	// get all of the uploaded ones, set them as OK
-	r, err := http.Get(fmt.Sprintf("https://discord.com/api/v9/oauth2/applications/%s/assets", config.ApplicationId))
+	// get all the uploaded assets
+	r, err := http.Get(fmt.Sprintf(endpointAssets, config.ApplicationId))
 	if err != nil {
 		panic(err)
 	}
@@ -75,24 +75,29 @@ func Sync() {
 		panic(err)
 	}
 
+	// set existing assets as OK on leveldb
 	existing := make(map[string]byte)
 	for _, a := range all {
-		t++
-		existing[a.Id] = 1
+		existing[a.ID] = 1
+
+		// check whether on leveldb
 		d, err := db.Get([]byte(a.Name), nil)
 		if d == nil {
-			err = db.Put([]byte(a.Name), hash(a.Id, assetOK, 0), nil)
+			// exists on discord but not on leveldb, so add it and set OK
+			err = db.Put([]byte(a.Name), hash(a.ID, assetOK, 0), nil)
 		} else {
+			// exists on both, so set OK while keeping the last opened time
 			_, _, lastOpened := unhash(d)
-			err = db.Put([]byte(a.Name), hash(a.Id, assetOK, lastOpened), nil)
+			log.Log().Debugf("[UPDATE] asset %s exists on both, setting OK!", a.Name)
+			err = db.Put([]byte(a.Name), hash(a.ID, assetOK, lastOpened), nil)
 		}
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	shouldDelete := t > 250
-	log.Log().Infof("loaded %d assets", t)
+	shouldDelete := len(all) > 250
+	log.Log().Infof("Loaded %d assets", len(all))
 
 	var allFromDb []temp
 
@@ -110,8 +115,8 @@ func Sync() {
 			}
 		}
 
-		// if it's needed, throw the Asset in a slice so we can sort and delete oldest ones
-		// this is to make sure we don't surpass the 300 Asset limit
+		// if needed, throw the asset in a slice, so we can sort and delete the oldest ones
+		// this is to make sure we don't surpass the 300 asset limit
 		if shouldDelete && status == assetOK {
 			allFromDb = append(allFromDb, temp{
 				albumid:    string(iter.Key()),
@@ -121,34 +126,33 @@ func Sync() {
 		}
 	}
 	iter.Release()
+	err = iter.Error()
+	if err != nil {
+		panic(err)
+	}
 
 	// sort all assets and delete the oldest ones
 	if shouldDelete {
-		log.Log().Info("deleting stuff")
+		log.Log().Infoln("Deleting older assets to stay away from discord's asset limit")
+		// sort by last opened
 		sort.Slice(allFromDb, func(i, j int) bool {
 			return allFromDb[i].lastopened > allFromDb[j].lastopened
 		})
 
 		go func() {
-			for n := 0; n < 10; n++ { // only delete 10 so we don't get rate limited !!!!
-				// send delete to discord!!!!
+			for n := 0; n < 10; n++ { // only delete 10 and sleep in between, so we don't get rate limited !
+				// send delete to discord
 				a := allFromDb[n]
 				DoDeleteAsset(a.assetid)
 
-				// delete from db too !!!!!
+				// mark db as deleted
 				err = db.Put([]byte(a.albumid), hash(a.assetid, assetDeleted, a.lastopened), nil)
 				if err != nil {
 					panic(err)
 				}
-
-				time.Sleep(time.Second * 2)
+				time.Sleep(time.Second)
 			}
 		}()
-	}
-
-	err = iter.Error()
-	if err != nil {
-		panic(err)
 	}
 }
 
@@ -156,10 +160,13 @@ func Sync() {
 func FetchAsset(album tidal.Album) *AssetData {
 	ad := GetAsset(album.StringId())
 	if ad != nil {
+		log.Log().Debugln("[FETCH] asset exists on db")
 		if ad.Status == assetOK {
+			log.Log().Debugln("-- [FETCH] asset OK")
 			return ad
 		}
 		if ad.Status == assetNew {
+			log.Log().Debugln("-- [FETCH] asset NEW")
 			return nil
 		}
 	}
@@ -179,32 +186,32 @@ func GetAsset(albumId string) *AssetData {
 		Asset: Asset{
 			Name: albumId,
 			Type: 1, // !
-			Id:   assetId,
+			ID:   assetId,
 		},
 		LastOpened: lastOpened,
 	}
 }
 
-// SaveAsset uploads an album cover to Discord and adds it to the database with the Status "new".
+// SaveAsset uploads an album cover to Discord and adds it to the database with the assetNew status.
 func SaveAsset(album tidal.Album) {
-	log.Log().Infof("asset for album %s not found, uploading new...", album.Title)
-	a := DoUploadAsset(album.StringId(), "data:image/jpg;base64,"+base64.StdEncoding.EncodeToString(album.GetCover()))
-	err := db.Put([]byte(album.StringId()), hash(a.Id, assetNew, int(time.Now().Unix())), nil)
+	log.Log().Infof("Asset for album %s not found, uploading new...", album.Title)
+	a := DoUploadAsset(album.StringId(), "data:image/jpg;base64,"+base64.StdEncoding.EncodeToString(album.CoverImage()))
+	err := db.Put([]byte(album.StringId()), hash(a.ID, assetNew, int(time.Now().Unix())), nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
-// this is bad but it's my first time using leveldb ok
-// plus it doesn't really matter we don't need perfect performance
+// hash stores the asset id, status and last opened time into a byte array.
 func hash(id string, status AssetStatus, lastOpened int) []byte {
-	return []byte(id + strconv.Itoa(int(status)) + strconv.Itoa(lastOpened))
+	return []byte(fmt.Sprintf("%s:%d:%d", id, status, lastOpened))
 }
 
 // asset id, asset status, last opened
 func unhash(h []byte) (string, AssetStatus, int) {
 	str := string(h)
-	s, _ := strconv.Atoi(str[18:19])
-	l, _ := strconv.Atoi(str[19 : len(h)-1])
-	return str[0:18], AssetStatus(s), l
+	split := strings.Split(str, ":")
+	st, _ := strconv.ParseInt(split[1], 10, 8)
+	lastOpen, _ := strconv.Atoi(split[2])
+	return split[0], AssetStatus(st), lastOpen
 }

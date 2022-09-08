@@ -1,14 +1,13 @@
 # discordtidal
 
-### USE AT YOUR OWN RISK! This got my main Discord account banned, as I was carelessly using it thinking Discord would warn me before disabling my account and not responding to the appeal.
-
-### Update: Apparently this wasn't it and the ban was lifted, but still best to be careful!
+> ### :warning: USE AT YOUR OWN RISK!
+> This code is openly abusing Discord's API to upload album covers as "game assets" in real time to a Discord application, which probably wouldn't be good if Discord caught your account doing that. I take no responsibility if your account gets terminated using discordtidal!
 
 Check out the safer branch [here](https://github.com/Unickorn/discordtidal/tree/safer).
 It offers the following:
 - less risk of your account getting terminated
 - much simpler to use, just click on an exe and it works
-- looks way more boring
+- looks much more boring
 
 ---
 
@@ -20,11 +19,8 @@ Well, I do. And this is what I did to make the currently playing TIDAL song show
 ## Okay, so, what is this again?
 
 A tool that makes the TIDAL song you're listening to show up in your Discord status. Only works on Windows using the 
-TIDAL desktop application (not the browser version) and looks like this:
+TIDAL desktop application (not the browser version) and looks like this compared to a Spotify listening status:
 
-![image](https://i.imgur.com/W53wzpq.png)
-
-With a recent Discord update, the background is black no matter the listening/playing status, hence it is even less noticable.
 
 ![spotify](https://user-images.githubusercontent.com/29836508/120451801-67df4f00-c39a-11eb-85e7-5173cb47334e.png)
 ![tidal](https://user-images.githubusercontent.com/29836508/120451811-69a91280-c39a-11eb-8982-5079a4c61412.png)
@@ -35,17 +31,25 @@ With a recent Discord update, the background is black no matter the listening/pl
 Since this uses a Discord application that's modified to match the song you're listening to, you need to create your own
 **Discord Application**.
 
-- Go to https://discord.com/developers, create a new application and set the application ID in the config.toml file.
+- Download a release from the releases tab.
 
+- Run the exe, it will most likely crash but that's fine. Now you will see a `config.toml` file in the folder.
+
+- Go to https://discord.com/developers, create a new application and set the Application ID value in the config.
 
 - Get your Discord account token and set it in the config too.
 
-  You can get this using many methods, I used Firefox' network monitor (Ctrl+Shift+E) to check the https requests that
+  You can get this using different methods, I used Firefox' network monitor (Ctrl+Shift+E) to check the https requests that
   contain my token as authorization.
-
 
 - Get a User Agent of your choice and paste it in the config. I wanted to make this configurable for the fun of it. If
   you don't know what a User Agent is, you can copy your user agent from [here](https://www.whatsmyua.info/).
+  
+- Start Discord, then discordtidal, and then the TIDAL desktop app. You may need to add it as a game for it to show up on your playing status.
+
+- Start listening!
+
+> :warning: The album artwork might not appear the first time you're listening to a new album, because Discord's asset cache takes some time to update. In a couple minutes or the next time you listen to the same album, the cover should be there.
 
 ## How does it work?
 

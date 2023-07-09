@@ -1,13 +1,15 @@
 package discordtidal
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/hugolgst/rich-go/client"
 	"github.com/unickorn/discordtidal/discord"
 	"github.com/unickorn/discordtidal/log"
 	"github.com/unickorn/discordtidal/rpc"
 	"github.com/unickorn/discordtidal/song"
 	"github.com/unickorn/discordtidal/tidal"
-	"time"
 )
 
 type Status uint8
@@ -68,7 +70,10 @@ func Start() {
 					Track:     t,
 				}
 
-				albumId := song.Current.Track.Album.StringId()
+				largeImage := song.Current.Track.Album.StringId()
+
+				trackUrl := fmt.Sprintf("https://listen.tidal.com/album/%d/track/%d", song.Current.Track.Album.ID , song.Current.Track.Id)
+
 				// if song changed, update cover and name
 				if songChanged {
 					log.Log().Debugln("---- [TRIGGER] SONG CHANGE")
@@ -76,7 +81,7 @@ func Start() {
 					if asset := discord.FetchAsset(song.Current.Track.Album); asset == nil {
 						// no asset on discord -> wait for cover and set to tidal
 						coverUpdateTime = 30
-						albumId = "tidal"
+						largeImage = "tidal"
 						sleepTime = time.Second
 					}
 					discord.UpdateName(song.Current.Track.Title)
@@ -84,16 +89,25 @@ func Start() {
 					rpc.Relog()
 				}
 
+				log.Log().Infoln("[TRIGGER] BUTTON URL CHANGED TO:", trackUrl)
+
+
 				// set activity
 				end := time.Unix(int64(song.Current.Track.Duration)+song.Current.StartTime+int64(song.Current.PausedTime), 0)
 				err := client.SetActivity(client.Activity{
 					Details:    "by " + song.Current.Track.FormatArtists(),
 					State:      "on " + song.Current.Track.Album.Title,
-					LargeImage: albumId,
+					LargeImage: largeImage,
 					LargeText:  song.Current.Track.Album.Title,
 					Timestamps: &client.Timestamps{
 						Start: &now,
 						End:   &end,
+					},
+					Buttons: []*client.Button{
+						{
+							Label: "Listen on TIDAL",
+							Url:   trackUrl,
+						},
 					},
 				})
 				if err != nil {
@@ -120,13 +134,15 @@ func Start() {
 				log.Log().Debugln("[TRIGGER] COVER UPDATE/UNPAUSE")
 
 				// update cover
-				albumId := song.Current.Track.Album.StringId()
+				largeImage := song.Current.Track.Album.StringId()
+				trackUrl := fmt.Sprintf("https://listen.tidal.com/album/%d/track/%d", song.Current.Track.Album.ID , song.Current.Track.Id)
+
 				discord.Sync()
 				// it probably still won't exist because stupid discord cache hasn't updated yet
 				a := discord.FetchAsset(song.Current.Track.Album)
 				if a == nil {
 					coverUpdateTime = 20 // reset timer
-					albumId = "tidal"
+					largeImage = "tidal"
 					sleepTime = time.Second
 				} else {
 					coverUpdateTime = 0
@@ -138,11 +154,17 @@ func Start() {
 				err := client.SetActivity(client.Activity{
 					Details:    "by " + song.Current.Track.FormatArtists(),
 					State:      "on " + song.Current.Track.Album.Title,
-					LargeImage: albumId,
+					LargeImage: largeImage,
 					LargeText:  song.Current.Track.Album.Title,
 					Timestamps: &client.Timestamps{
 						Start: &start,
 						End:   &end,
+					},
+					Buttons: []*client.Button{
+						{
+							Label: "Listen on TIDAL",
+							Url:   trackUrl,
+						},
 					},
 				})
 				if err != nil {
@@ -158,11 +180,14 @@ func Start() {
 			song.Current.PausedTime += uint64(sleepTime / time.Second)
 
 			// update cover
-			albumId := song.Current.Track.Album.StringId()
+			largeImage := song.Current.Track.Album.StringId()
+
+			trackUrl := fmt.Sprintf("https://listen.tidal.com/album/%d/track/%d", song.Current.Track.Album.ID , song.Current.Track.Id)
+
 			// it probably still won't exist because stupid discord cache hasn't updated yet
 			a := discord.FetchAsset(song.Current.Track.Album)
 			if a == nil {
-				albumId = "tidal"
+				largeImage = "tidal"
 			}
 
 			sleepTime = time.Second * 2
@@ -171,8 +196,14 @@ func Start() {
 				err := client.SetActivity(client.Activity{
 					Details:    "by " + song.Current.Track.FormatArtists(),
 					State:      "on " + song.Current.Track.Album.Title,
-					LargeImage: albumId,
+					LargeImage: largeImage,
 					LargeText:  song.Current.Track.Album.Title,
+					Buttons: []*client.Button{
+						{
+							Label: "Listen on TIDAL",
+							Url:   trackUrl,
+						},
+					},
 				})
 				if err != nil {
 					panic(err)

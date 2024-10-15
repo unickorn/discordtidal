@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	applicationId = "840927525588172810"
+	applicationId = "1295735155817709648"
 	loggedIn      = false
 )
 

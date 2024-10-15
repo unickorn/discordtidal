@@ -33,7 +33,7 @@ jobs:
         run: go mod download
 
       - name: Build the application
-        run: go build -o -ldflags='-s -w' discordtidal.exe cmd/main.go
+        run: go build -ldflags='-s -w' -o discordtidal.exe cmd/main.go
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
